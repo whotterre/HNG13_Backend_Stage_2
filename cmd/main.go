@@ -1,12 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"task_2/config"
-	initializers "task_2/initializer"
+	"task_2/initializers"
+	"task_2/routes"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -28,9 +33,14 @@ func main() {
 	}
 
 	log.Println("Database connected and migrations applied")
-
-	// TODO: start your HTTP server / router here.
-
+	
+	// HTTP server start up stuff...
+	router := gin.Default()
+	routes.SetupRoutes(router, db)
+	err = http.ListenAndServe(fmt.Sprintf(":%s", cfg.Port), router)
+	if err != nil {
+		log.Println("Failed to start HTTP server because ", err.Error())
+	}
 	// Block until interrupt signal (graceful shutdown)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
