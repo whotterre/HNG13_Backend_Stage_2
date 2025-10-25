@@ -25,9 +25,10 @@ func (e *ValidationError) Error() string {
 type CountryService interface {
 	RefreshCountries() (dto.RefreshCountriesResponse, error)
 	GetStats() (*dto.GetCountryStatsResponse, error)
-	GetCountryByName(name string) (*models.Country, error)
+	GetCountryByName(name string) (*dto.GetCountryByNameResponse, error)
+	GetAllCountries(region string, currency string, sort string) ([]dto.FilterCountriesResponse, error)
 	DeleteCountryByName(name string) error
-}	
+}
 
 type countryService struct {
 	countryRepository repository.CountryRepository
@@ -146,31 +147,44 @@ func (s countryService) RefreshCountries() (dto.RefreshCountriesResponse, error)
 	return response, nil
 }
 
-
-func (s countryService) GetStats() (*dto.GetCountryStatsResponse, error){
+func (s countryService) GetStats() (*dto.GetCountryStatsResponse, error) {
 	countriesCount, lastRefreshedTime, err := s.countryRepository.GetStats()
 	if err != nil {
 		return nil, err
 	}
 
 	statistics := dto.GetCountryStatsResponse{
-		TotalCountries: int(countriesCount),
+		TotalCountries:  int(countriesCount),
 		LastRefreshedAt: lastRefreshedTime,
 	}
 
 	return &statistics, nil
 }
 
-func (s countryService) GetCountryByName(name string) (*models.Country, error){
+func (s countryService) GetCountryByName(name string) (*dto.GetCountryByNameResponse, error) {
 	// Normalize the name
 	normalizedName := strings.ToLower(name)
 	// Call the repo method
 	country, err := s.countryRepository.GetCountryByName(normalizedName)
 	if err != nil {
-		return nil, errors.New("Country not found") 
+		return nil, errors.New("Country not found")
 	}
 
-	return country, nil
+	// Convert to DTO with ISO 8601 formatted timestamp
+	response := &dto.GetCountryByNameResponse{
+		ID:              country.ID,
+		Name:            country.Name,
+		Capital:         country.Capital,
+		Region:          country.Region,
+		Population:      country.Population,
+		CurrencyCode:    country.CurrencyCode,
+		ExchangeRate:    country.ExchangeRate,
+		EstimatedGDP:    country.EstimatedGDP,
+		FlagURL:         country.FlagURL,
+		LastRefreshedAt: country.LastRefreshedAt.Format(time.RFC3339),
+	}
+
+	return response, nil
 }
 
 func (s countryService) DeleteCountryByName(name string) error {
@@ -179,8 +193,35 @@ func (s countryService) DeleteCountryByName(name string) error {
 	// Call the repo method
 	err := s.countryRepository.DeleteCountryByName(normalizedName)
 	if err != nil {
-		return errors.New("Failed to delete country") 
+		return errors.New("Failed to delete country")
 	}
 
 	return nil
+}
+
+func (s countryService) GetAllCountries(region string, currency string, sort string) ([]dto.FilterCountriesResponse, error) {
+	countries, err := s.countryRepository.GetAllCountriesWithFilters(region, currency, sort)
+	if err != nil {
+		return nil, err
+	}
+	var res []dto.FilterCountriesResponse
+
+	for _, country := range *countries {
+		record := dto.FilterCountriesResponse{
+			ID:              country.ID,
+			Name:            country.Name,
+			Capital:         country.Capital,
+			Region:          country.Region,
+			Population:      country.Population,
+			CurrencyCode:    country.CurrencyCode,
+			ExchangeRate:    country.ExchangeRate,
+			EstimatedGDP:    country.EstimatedGDP,
+			FlagURL:         country.FlagURL,
+			LastRefreshedAt: country.LastRefreshedAt.Format(time.RFC3339),
+		}
+
+		res = append(res, record)
+	}
+
+	return res, nil
 }

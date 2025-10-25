@@ -3,6 +3,7 @@ package repository
 import (
 	"strings"
 	"task_2/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -17,6 +18,7 @@ type CountryRepository interface {
 	UpdateCountry(countryId uint, updateData *models.Country) error
 	DeleteCountryByName(countryName string) error
 	GetAllCountries() (*[]models.Country, error)
+	GetAllCountriesWithFilters(region string, currency string, sort string) (*[]models.Country, error)
 	GetStats() (int64, string, error)
 }
 
@@ -49,6 +51,34 @@ func (r countryRepository) GetAllCountries() (*[]models.Country, error) {
 	return &countries, nil
 }
 
+func (r countryRepository) GetAllCountriesWithFilters(region string, currency string, sort string) (*[]models.Country, error) {
+	var countries []models.Country
+
+	q := r.db.Model(&models.Country{})
+
+	if strings.TrimSpace(region) != "" {
+		q = q.Where("region = ?", region)
+	}
+
+	if strings.TrimSpace(currency) != "" {
+		q = q.Where("currency_code = ?", currency)
+	}
+
+	switch sort {
+	case "gdp_desc":
+		q = q.Order("estimated_gdp DESC")
+	case "gdp_asc":
+		q = q.Order("estimated_gdp ASC")
+	default:
+		q = q.Order("name ASC")
+	}
+
+	if err := q.Find(&countries).Error; err != nil {
+		return nil, err
+	}
+	return &countries, nil
+}
+
 func (r countryRepository) UpdateCountry(countryId uint, updateData *models.Country) error {
 	res := r.db.Model(&models.Country{}).Where("id = ?", countryId).Updates(updateData)
 	if res.Error != nil {
@@ -75,7 +105,7 @@ func (r countryRepository) GetStats() (int64, string, error) {
 	}
 
 	var result struct {
-		LastRefreshedAt string
+		LastRefreshedAt *time.Time
 	}
 
 	err := r.db.Model(&models.Country{}).
@@ -86,5 +116,13 @@ func (r countryRepository) GetStats() (int64, string, error) {
 		return count, "", err
 	}
 
-	return count, result.LastRefreshedAt, nil
+	// Format to ISO 8601 (RFC3339)
+	var lastRefreshedStr string
+	if result.LastRefreshedAt != nil {
+		lastRefreshedStr = result.LastRefreshedAt.Format(time.RFC3339)
+	} else {
+		lastRefreshedStr = ""
+	}
+
+	return count, lastRefreshedStr, nil
 }

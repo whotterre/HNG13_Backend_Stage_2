@@ -16,6 +16,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 
 	router.POST("/countries/refresh", countryHandlers.RefreshCountries)
 	router.GET("/status", countryHandlers.GetStatistics)
+	router.GET("/countries", countryHandlers.GetAllCountries)
 	router.GET("/countries/:name", countryHandlers.GetCountryByName)
 	router.DELETE("/countries/:name", countryHandlers.DeleteCountry)
 }

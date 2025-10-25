@@ -69,6 +69,20 @@ func (h CountryHandler) GetCountryByName(c *gin.Context) {
 	})
 }
 
+func (h CountryHandler) GetAllCountries(c *gin.Context) {
+	region := c.Query("region")
+	currency := c.Query("currency")
+	sort := c.Query("sort")
+
+	countries, err := h.countryServices.GetAllCountries(region, currency, sort)
+	if err != nil {
+		handleError(err, c)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"countries": countries})
+}
+
 func (h CountryHandler) DeleteCountry(c *gin.Context) {
 	countryName := c.Param("name")
 
