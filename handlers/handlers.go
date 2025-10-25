@@ -38,6 +38,17 @@ func (h CountryHandler) RefreshCountries(c *gin.Context) {
 	log.Println(response)
 	c.JSON(http.StatusOK, response)
 }
+
+func (h CountryHandler) GetStatistics(c *gin.Context){
+	stats, err := h.countryServices.GetStats()
+	if err != nil {
+		handleError(err, c)
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+
 func handleError(err error, c *gin.Context) error {
 	errString := err.Error()
 
@@ -66,3 +77,5 @@ func handleError(err error, c *gin.Context) error {
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error", "details": errString})
 	return nil
 }
+
+

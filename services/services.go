@@ -24,6 +24,7 @@ func (e *ValidationError) Error() string {
 
 type CountryService interface {
 	RefreshCountries() (dto.RefreshCountriesResponse, error)
+	GetStats() (*dto.GetCountryStatsResponse, error)
 }
 
 type countryService struct {
@@ -141,4 +142,19 @@ func (s countryService) RefreshCountries() (dto.RefreshCountriesResponse, error)
 		Status: "Successfully refreshed countries",
 	}
 	return response, nil
+}
+
+
+func (s countryService) GetStats() (*dto.GetCountryStatsResponse, error){
+	countriesCount, lastRefreshedTime, err := s.countryRepository.GetStats()
+	if err != nil {
+		return nil, err
+	}
+
+	statistics := dto.GetCountryStatsResponse{
+		TotalCountries: int(countriesCount),
+		LastRefreshedAt: lastRefreshedTime,
+	}
+
+	return &statistics, nil
 }

@@ -17,6 +17,7 @@ type CountryRepository interface {
 	UpdateCountry(countryId uint, updateData *models.Country) error
 	DeleteCountryByName(countryName string) error
 	GetAllCountries() (*[]models.Country, error)
+	GetStats() (int64, string, error)
 }
 
 func NewCountryRepository(db *gorm.DB) CountryRepository {
@@ -66,9 +67,24 @@ func (r countryRepository) DeleteCountryByName(countryName string) error {
 	return nil
 }
 
-func (r countryRepository) GetStats() {
-	if err := r.db.Exec("SELECT COUNT(*), last_refreshed_at FROM countries").Error; err != nil {
+func (r countryRepository) GetStats() (int64, string, error) {
+	var count int64
 
+	if err := r.db.Model(&models.Country{}).Count(&count).Error; err != nil {
+		return 0, "", err
 	}
-	// return
+
+	var result struct {
+		LastRefreshedAt string
+	}
+
+	err := r.db.Model(&models.Country{}).
+		Select("MAX(last_refreshed_at) as last_refreshed_at").
+		Scan(&result).Error
+
+	if err != nil {
+		return count, "", err
+	}
+
+	return count, result.LastRefreshedAt, nil
 }
