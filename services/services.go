@@ -25,7 +25,8 @@ func (e *ValidationError) Error() string {
 type CountryService interface {
 	RefreshCountries() (dto.RefreshCountriesResponse, error)
 	GetStats() (*dto.GetCountryStatsResponse, error)
-}
+	GetCountryByName(name string) (*models.Country, error)
+}	
 
 type countryService struct {
 	countryRepository repository.CountryRepository
@@ -157,4 +158,16 @@ func (s countryService) GetStats() (*dto.GetCountryStatsResponse, error){
 	}
 
 	return &statistics, nil
+}
+
+func (s countryService) GetCountryByName(name string) (*models.Country, error){
+	// Normalize the name
+	normalizedName := strings.ToLower(name)
+	// Call the repo method
+	country, err := s.countryRepository.GetCountryByName(normalizedName)
+	if err != nil {
+		return nil, errors.New("Country not found") 
+	}
+
+	return country, nil
 }
