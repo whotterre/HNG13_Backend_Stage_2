@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"task_2/services"
 
@@ -64,9 +65,7 @@ func (h CountryHandler) GetCountryByName(c *gin.Context) {
 		handleError(err, c)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"country": countryData,
-	})
+	c.JSON(http.StatusOK, countryData)
 }
 
 func (h CountryHandler) GetAllCountries(c *gin.Context) {
@@ -80,7 +79,7 @@ func (h CountryHandler) GetAllCountries(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"countries": countries})
+	c.JSON(http.StatusOK, countries)
 }
 
 func (h CountryHandler) DeleteCountry(c *gin.Context) {
@@ -100,6 +99,21 @@ func (h CountryHandler) DeleteCountry(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+func (h CountryHandler) GetSummaryImage(c *gin.Context) {
+	imagePath := "cache/summary.png"
+
+	// Check if the image file exists
+	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Summary image not found. Please refresh countries first.",
+		})
+		return
+	}
+
+	// Serve the image file
+	c.File(imagePath)
 }
 
 func handleError(err error, c *gin.Context) error {

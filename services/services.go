@@ -141,6 +141,16 @@ func (s countryService) RefreshCountries() (dto.RefreshCountriesResponse, error)
 		return dto.RefreshCountriesResponse{}, err
 	}
 
+	// Generate summary image after successful refresh
+	totalCount, _, err := s.countryRepository.GetStats()
+	if err == nil {
+		topCountries, err := s.countryRepository.GetTopCountriesByGDP(5)
+		if err == nil {
+			// Generate the image with current timestamp
+			_ = utils.GenerateSummaryImage(int(totalCount), topCountries, time.Now(), "cache/summary.png")
+		}
+	}
+
 	response := dto.RefreshCountriesResponse{
 		Status: "Successfully refreshed countries",
 	}

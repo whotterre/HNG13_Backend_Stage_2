@@ -20,6 +20,7 @@ type CountryRepository interface {
 	GetAllCountries() (*[]models.Country, error)
 	GetAllCountriesWithFilters(region string, currency string, sort string) (*[]models.Country, error)
 	GetStats() (int64, string, error)
+	GetTopCountriesByGDP(limit int) ([]models.Country, error)
 }
 
 func NewCountryRepository(db *gorm.DB) CountryRepository {
@@ -125,4 +126,15 @@ func (r countryRepository) GetStats() (int64, string, error) {
 	}
 
 	return count, lastRefreshedStr, nil
+}
+
+func (r countryRepository) GetTopCountriesByGDP(limit int) ([]models.Country, error) {
+	var countries []models.Country
+	if err := r.db.Where("estimated_gdp IS NOT NULL").
+		Order("estimated_gdp DESC").
+		Limit(limit).
+		Find(&countries).Error; err != nil {
+		return nil, err
+	}
+	return countries, nil
 }
