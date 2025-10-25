@@ -69,6 +69,25 @@ func (h CountryHandler) GetCountryByName(c *gin.Context) {
 	})
 }
 
+func (h CountryHandler) DeleteCountry(c *gin.Context) {
+	countryName := c.Param("name")
+
+	if countryName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "No param passed",
+		})
+		return
+	}
+
+	err := h.countryServices.DeleteCountryByName(countryName)
+	if err != nil {
+		handleError(err, c)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 func handleError(err error, c *gin.Context) error {
 	errString := err.Error()
 

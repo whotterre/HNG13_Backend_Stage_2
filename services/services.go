@@ -26,6 +26,7 @@ type CountryService interface {
 	RefreshCountries() (dto.RefreshCountriesResponse, error)
 	GetStats() (*dto.GetCountryStatsResponse, error)
 	GetCountryByName(name string) (*models.Country, error)
+	DeleteCountryByName(name string) error
 }	
 
 type countryService struct {
@@ -170,4 +171,16 @@ func (s countryService) GetCountryByName(name string) (*models.Country, error){
 	}
 
 	return country, nil
+}
+
+func (s countryService) DeleteCountryByName(name string) error {
+	// Normalize the name
+	normalizedName := strings.ToLower(name)
+	// Call the repo method
+	err := s.countryRepository.DeleteCountryByName(normalizedName)
+	if err != nil {
+		return errors.New("Failed to delete country") 
+	}
+
+	return nil
 }
